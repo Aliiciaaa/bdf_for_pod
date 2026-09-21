@@ -1,7 +1,7 @@
 % Code for computing the POD basis
 clear all; close all;
 
-Ms = [32,64,128,256,512]; 
+Ms = [32,64,128,256,512,1024]; 
 beta = 3;
 
 for i = 1 : length(Ms)
@@ -10,7 +10,7 @@ for i = 1 : length(Ms)
 
     nombre = ['snapshots_diff_M',num2str(M),'.mat'];
     if ~isfile(nombre)
-       error(['Archivo no encontrado: ', nombre]);
+       error(['File not found: ', nombre]);
     end
 
     load(nombre);
@@ -19,23 +19,24 @@ for i = 1 : length(Ms)
     nn = length(z);
     
     UNint = UN(Iuv,:);
-    % Producto escalar en H1 elementos finitos sobre el espacio.
+
     S2 = kron(speye(2),Sh(Iu,Iu));
     disp('Computing Cholesky factorization ...');
     [Rh,iflag,P] = chol(S2); % S2 = P*Rh'*Rh*P'
     disp('... done.');
-    disp('computing the time derivatives ...')
-    % La matriz de correlación del método POD la denotamos como (A'*A)/N
+    disp('Computing the time derivatives ...')
+    % correlation matrix for POD corresponds to: (A'*A)/N
     A = Rh*(P'*UNint);
-    % Calculamos la base POD
+    disp('... done.');
     disp('Computing SVD ...')
     [Wl,S,Vr] = svd(A,"econ");
     disp('... done.')
     s = diag(S)/sqrt(N); % in s the singular values
     % lambda_k = s_k^2 
+    
     figure();
     semilogy(s.^2, 'b', 'LineWidth', 1.5);
-    title('Autovalores de la matriz de correlación','Interpreter','latex');
+    title(['Correlation Matrix Eigenvalues $M=$', num2str(M)],'Interpreter','latex');
     
     PhiDiff = zeros(size(Wl));
     PhiDiff(Iuv,:) = P*(Rh\Wl); 
