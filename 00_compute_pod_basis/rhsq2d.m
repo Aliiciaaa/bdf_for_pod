@@ -1,36 +1,23 @@
 function rhsint = rhsq2d(t, y, Tri, z, I_dir, Ahuu, Ahvv, Ahvu, fh, J, r, param)
-    % Parámetros.
+    % Right-hand side of the FEM system for interior nodes.
     nu = param(1); alpha = param(2); beta = param(3);
     
-    %nt = size(Tri,1); % nt = número de triángulos
-    ne = size(Tri,2); % ne = número de nodos por elemento -> si ne = 3 (lineales); ne = 6 (cuadráticos)
-    nn = length(z); % nn = número de nodos para cada variable 
+    %nt = size(Tri,1); % nt = number of triangles
+    ne = size(Tri,2);  % ne = number of nodes per element -> if ne = 3 (linear); ne = 6 (quadratic)
+    nn = length(z);    % nn = number of nodes per variable 
 
-    % Buscamos los índices con las condiciones de contorno Dirichlet :
-    %ndir = length(I_dir);
-    I_all = (1:nn)';               % Todos los nodos
-    I_int = setdiff(I_all, I_dir); % Nodos interiores = nodos - Dirichlet
+    I_all = (1:nn)';               % All nodes
+    I_int = setdiff(I_all, I_dir); % Interior nodes = All nodes - Dirichlet nodes
     nint = length(I_int);
 
-    % Antes de calcular rhs : 
-    % Separamos el vector en las dos variables del problema : u,v
     u = y(1:nint); v = y(nint+1:end);
     ua = zeros(nn,1); va = ua;
-    % Añadimos las condiciones Dirichlet
+    % add Dirichlet conditions for each variable
     ua(I_int) = u; va(I_int) = v;
     ua(I_dir) = alpha; va(I_dir) = beta/alpha;
 
-    % % Coordenadas de los vértices de todos los triángulos.
-    % x1 = z(Tri(:,1),1); x2 = z(Tri(:,2),1); x3 = z(Tri(:,3),1); 
-    % y1 = z(Tri(:,1),2); y2 = z(Tri(:,2),2); y3 = z(Tri(:,3),2); 
-    % % Jacobiano del cambio de variable : [xi_x xi_y; eta_x, eta_y]./J
-    % J = (x2-x1).*(y3-y1) - (x3-x1).*(y2-y1); %determinante del jacobiano
-    
-    
-    % Definimos los nodos de cuadratura, las funciones base en triángulo
-    % de referencia.
-    [C,W] = cuad_T0; % nodos y pesos de cuadratura en T0.
-    xi = C(1,:); eta = C(2,:); % para calcular el término f 
+    [C,W] = cuad_T0; % quadrature nodes and weights at reference triangle T0
+    xi = C(1,:); eta = C(2,:);
     if r == 1
        ne = 3;
        S1 = 0.5*[1 -1 0; -1 1 0; 0 0 0];
@@ -40,7 +27,7 @@ function rhsint = rhsq2d(t, y, Tri, z, I_dir, Ahuu, Ahvv, Ahvu, fh, J, r, param)
        S4 = (1/24)*[2 1 1; 1 2 1; 1 1 2];
        N = [1-xi-eta; xi; eta];
     elseif r == 2
-       ne = 6;  % ne = nodos por elemento
+       ne = 6;  
        S1=[ 3 1 0 -4 0 0; 1 3 0 -4 0 0; 0 0 0 0 0 0; -4 -4 0 8 0 0; ...
             0 0 0 0 8 -8; 0 0 0 0 -8 8 ]/6;
        S2=[ 6 1 1 -4 0 -4; 1 0 -1 -4 4 0;  1 -1 0 0 4 -4; -4 -4 0 8 -8 8; ...
@@ -58,29 +45,29 @@ function rhsint = rhsq2d(t, y, Tri, z, I_dir, Ahuu, Ahvv, Ahvu, fh, J, r, param)
               4*eta.*xi;
               4*eta.*(1 - xi - eta)];
     else
-        display(['El método no está implementado para r=',num2str(r)]);
+        display(['The method is not implemented for r=',num2str(r)]);
     end
-      
-    % Cálculo rhs 
 
-    % Calculamos el término 
+    % option 1. computing the linear part using stiffness and mass matrix
+    % from FEM system for interior nodes
     % fh = [int alpha * phi1; int alpha phi2, ... , int alpha phinn] = 
-    %fh = alpha*Mh*ones(nn,1);
-    % Calculamos el término lineal : (con las condiciones Dirichlet
-    % incluidas)
-    %  fluint = (-nu*Sh(I_int,I_int) + (beta+1)*Mh(I_int,I_int))*ua(I_int) + ...
+    % fh = alpha*Mh*ones(nn,1);
+    % 
+    % fluint = (-nu*Sh(I_int,I_int) + (beta+1)*Mh(I_int,I_int))*ua(I_int) + ...
     %     (-nu*Sh(I_int,I_dir) + (beta+1)*Mh(I_int,I_dir))*gu + ...
     %     fh(I_int);
     % 
     % flvint = (-nu*Sh(I_int,I_int)*va(I_int) - Sh(I_int,I_dir)*gv) + ...
     %     beta*(Mh(I_int,I_int)*ua(I_int) + Mh(I_int,I_dir)*gu) ;
     % 
+    % option 2. computing the linear part using Ah matricess (usefull for
+    % the POD system)
     fluint = Ahuu(I_int,I_int)*ua(I_int) + Ahuu(I_int,I_dir)*ua(I_dir) + fh(I_int);
    
     flvint = Ahvv(I_int,I_int)*va(I_int) + Ahvv(I_int,I_dir)*va(I_dir) + ...
         Ahvu(I_int,I_int)*ua(I_int) + Ahvu(I_int,I_dir)*ua(I_dir) ;
     
-    % Calculamos el término no lineal nlh 
+    % non-linear term 
     U = ua(Tri); V = va(Tri);
     Uc = U*N; Vc = V*N;
     Nlg = (Uc.^2).*Vc; 
@@ -88,6 +75,5 @@ function rhsint = rhsq2d(t, y, Tri, z, I_dir, Ahuu, Ahvv, Ahvu, fh, J, r, param)
     Cnlg = N*diag(W)*NlgJ';
     nlh = full(sparse(Tri(:,1:ne)',ones(size(Cnlg)),Cnlg,nn,1));
  
-    % Expresión final del lado derecho de la ODE en tiempo
-     rhsint = [fluint + nlh(I_int) ; flvint - nlh(I_int)];
+    rhsint = [fluint + nlh(I_int) ; flvint - nlh(I_int)];
 end
