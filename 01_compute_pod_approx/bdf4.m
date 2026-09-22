@@ -13,7 +13,7 @@ function [a_val,k_mean] = bdf4(a0, rhs, jrhs, Mr, tiempos, max_iter)
         % OUTPUT:
         %   a_val     : Matrix of reduced coefficients at each time step
 
-        N = length(tiempos);                      
+N = length(tiempos);                      
 dt = abs(tiempos(2) - tiempos(1));        
 TOL = (dt)^4 / 100;
 t0 = tiempos(1);
