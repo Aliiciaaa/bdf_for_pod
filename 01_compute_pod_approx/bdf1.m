@@ -1,48 +1,42 @@
 function [a_val,k] = bdf1(a0, rhs, jrhs, Mr, tiempos, max_iter)
-% BDF1 - Integración temporal del sistema proyectado POD utilizando el método BDF1 (Euler implícito).
-%
-% INPUT:
-%   a0        - Vector columna con los coeficientes iniciales en la base POD
-%               (proyección inicial del sistema FEM sobre la base POD).
-%   rhs       - Función handle @(t, a) que define el segundo miembro (no lineal)
-%               del sistema reducido en función del tiempo t y del estado a.
-%   jrhs      - Función handle @(t, a) que devuelve el Jacobiano de rhs respecto
-%               a 'a', necesario para el método de Newton.
-%   Mr        - Matriz de masa reducida del sistema proyectado en la base POD.
-%   tiempos   : tiempos en los que se calcula la solución
-%   TOL       - Tolerancia para la convergencia del método de Newton-Raphson.
-%   max_iter  - Número máximo de iteraciones de Newton permitidas por paso de tiempo.
-%
-% OUTPUT:
-%   a_val     - Matriz cuyos columnas contienen los coeficientes de la solución
-%               aproximada en la base POD en cada instante de tiempo especificado
-%               en 'tiempos'. El tamaño es [r, N], donde r es el número de modos POD
-%               y N es el número de pasos de tiempo.
+        % BDF1 - Temporal integration of the projected POD system using the BDF1 method (implicit Euler).
+        % INPUT:
+        %   a0        - Column vector with the initial coefficients in the POD basis
+        %               (initial projection of the FEM system onto the POD basis).
+        %   rhs       - Function handle @(t, a) that defines the right-hand side (non-linear)
+        %               of the reduced system as a function of time t and state a.
+        %   jrhs      - Function handle @(t, a) that returns the Jacobian of rhs with respect
+        %               to 'a', required for the Newton method.
+        %   Mr        - Reduced mass matrix of the projected system in the POD basis.
+        %   tiempos   - Time steps at which the solution is computed.
+        %   TOL       - Tolerance for the convergence of the Newton-Raphson method.
+        %   max_iter  - Maximum number of Newton iterations allowed per time step.
+        %
+        % OUTPUT:
+        %   a_val     - Matrix whose columns contain the coefficients of the approximate
+        %               solution in the POD basis at each time instant specified
+        %               in 'tiempos'. The size is [r, N], where r is the number of POD modes
+        %               and N is the number of time steps.
 
-% Número de pasos de tiempo
 N = length(tiempos);
 dt = abs(tiempos(end) - tiempos(end-1));  % Paso de tiempo constante
 TOL = (dt)/100;
-% Inicialización de la matriz de soluciones en base POD
+
 a_val = zeros(size(a0,1), N);
 
-% Condición inicial (proyección sobre base POD)
+% Initial condition 
 a_val(:,1) = a0;
 
-% Bucle temporal
 for n = 2:N
-    t_next = tiempos(n);        % Tiempo actual
-    a_prev = a_val(:, n-1);     % Solución en el paso anterior
-    a = a_prev;                 % Inicialización de Newton con el valor anterior
-
+    t_next = tiempos(n);        % at time t_{n}
+    a_prev = a_val(:, n-1);     % solution at t_{n-1}
+    a = a_prev;                 % start Newton with solution at t_{n-1}
     for k = 1:max_iter
-        R = Mr * (a - a_prev) / dt - rhs(t_next, a); % formulación implícita
+        R = Mr * (a - a_prev) / dt - rhs(t_next, a); 
 
         J = Mr / dt - jrhs(t_next, a);
 
         delta = -J \ R;
-
-        % Actualización de la solución
         a = a + delta;
 
         if norm(delta) < TOL
