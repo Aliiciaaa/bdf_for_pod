@@ -1,6 +1,6 @@
 function [c,w]=cuad_T0
 
-%nodos de cuadratura
+% quadrature nodes
 c1=[1 1]/3;
 c2=(6+sqrt(15))*[1 1]/21;
 c3=[(9-2*sqrt(15)),(6+sqrt(15))]/21;
@@ -12,7 +12,7 @@ c=[c1;c2;c3;c4;c5;c6;c7]';
 cx=c(1,:);
 cy=(c(2,:));
 
-% pesos en los nodos de cuadratura
+% quadrature weights
 w1=0.1125;
 w2=(155+sqrt(15))/2400;
 w3=w2;
