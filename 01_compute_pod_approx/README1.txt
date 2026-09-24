@@ -19,3 +19,5 @@ This directory is used to compute the POD approximation for different choices on
 To get the POD approximation, run 'todo' and define the number of the stepsizes in the POD basis (M) and the number of modes (r). Results are saved in 'results_POD_'M'_r' files. POD basis are saved in '00_compute_pod_basis' directory. A tensor structure is used to compute the POD basis at 2049 time instants.
 
 To get the results in Table 1, 2 and 3, run 'tabla_de_errores' file and select the corresponding columns in the error matrices. 
+Take 'M = 1024' and 'nrs= [18, 26, 34, 42, 50]' in 'todo' file to get the necessary results for running 'tabla_de_errores.m'.
+Take 'M = 64, 128, 256, 512' and 'nrs = 18' in 'todo' file to get the necessary results for running files in '02_compute_errors_bdf' folder.
